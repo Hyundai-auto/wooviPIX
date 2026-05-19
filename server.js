@@ -3,6 +3,7 @@ const axios = require('axios');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const crypto = require('crypto');
+const path = require('path'); // Adicione esta linha
 
 dotenv.config();
 
@@ -10,7 +11,20 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
+// --- ADICIONE ESTAS LINHAS ABAIXO ---
+
+// Serve os arquivos estáticos da pasta atual (ou da pasta onde está o index.html)
+app.use(express.static(path.join(__dirname, '.')));
+
+// Rota principal para carregar o index.html
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// --- FIM DAS NOVAS LINHAS ---
+
 const WOOVI_API_URL = 'https://api.woovi.com/api/v1';
+// ... restante do seu código (rotas /api/pix, etc )
 const WOOVI_APP_ID = process.env.WOOVI_APP_ID;
 
 app.post('/api/pix', async (req, res) => {
