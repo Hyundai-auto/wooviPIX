@@ -3,7 +3,7 @@ const axios = require('axios');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const crypto = require('crypto');
-const path = require('path'); // Adicione esta linha
+const path = require('path');
 
 dotenv.config();
 
@@ -11,22 +11,18 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-// --- ADICIONE ESTAS LINHAS ABAIXO ---
-
-// Serve os arquivos estáticos da pasta atual (ou da pasta onde está o index.html)
+// Serve arquivos estáticos (HTML, CSS, JS)
 app.use(express.static(path.join(__dirname, '.')));
 
-// Rota principal para carregar o index.html
+// Rota principal para carregar o seu checkout
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// --- FIM DAS NOVAS LINHAS ---
-
 const WOOVI_API_URL = 'https://api.woovi.com/api/v1';
-// ... restante do seu código (rotas /api/pix, etc )
 const WOOVI_APP_ID = process.env.WOOVI_APP_ID;
 
+// Rota para gerar o Pix (chamada pelo seu index.html )
 app.post('/api/pix', async (req, res) => {
     try {
         const { payer_name, payer_cpf, payer_phone, amount } = req.body;
@@ -35,9 +31,7 @@ app.post('/api/pix', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Campos obrigatórios ausentes.' });
         }
 
-        // Converter valor para centavos (Woovi usa centavos)
         const valueInCents = Math.round(parseFloat(amount.replace(',', '.')) * 100);
-
         const correlationID = crypto.randomUUID();
 
         const payload = {
@@ -47,7 +41,7 @@ app.post('/api/pix', async (req, res) => {
             customer: {
                 name: payer_name,
                 taxID: payer_cpf.replace(/\D/g, ''),
-                email: 'cliente@email.com', // Opcional, mas recomendado
+                email: 'cliente@email.com',
                 phone: payer_phone.replace(/\D/g, '')
             }
         };
@@ -76,25 +70,6 @@ app.post('/api/pix', async (req, res) => {
             message: 'Erro ao processar o pagamento Pix.',
             error: error.response ? error.response.data : error.message
         });
-    }
-});
-
-// Endpoint para verificar status (opcional, mas útil)
-app.get('/api/pix/status/:correlationID', async (req, res) => {
-    try {
-        const { correlationID } = req.params;
-        const response = await axios.get(`${WOOVI_API_URL}/charge/${correlationID}`, {
-            headers: {
-                'Authorization': WOOVI_APP_ID
-            }
-        });
-
-        res.json({
-            success: true,
-            status: response.data.charge.status // Ex: COMPLETED, EXPIRED, OPEN
-        });
-    } catch (error) {
-        res.status(500).json({ success: false, message: 'Erro ao consultar status.' });
     }
 });
 
